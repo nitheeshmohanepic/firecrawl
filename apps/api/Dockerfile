@@ -8,10 +8,10 @@ COPY . /app
 WORKDIR /app
 
 FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile
 
 FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install && pnpm run build
+RUN pnpm install && pnpm run build
 
 # Install Go
 FROM golang:1.24 AS go-base
@@ -52,13 +52,15 @@ COPY --from=rust-base /app/sharedLibs/html-transformer/target/release/libhtml_tr
 COPY --from=rust-base /app/sharedLibs/pdf-parser/target/release/libpdf_parser.so /app/sharedLibs/pdf-parser/target/release/libpdf_parser.so
 COPY --from=rust-base /app/sharedLibs/crawler/target/release/libcrawler.so /app/sharedLibs/crawler/target/release/libcrawler.so
 
-# Install git
-RUN apt-get update && apt-get install -y git procps && rm -rf /var/lib/apt/lists/*
+# Install git and fix entrypoint script
+RUN apt-get update && apt-get install -y git procps && rm -rf /var/lib/apt/lists/* && \
+    sed -i 's/\r$//' /app/docker-entrypoint.sh && \
+    chown -R node:node /app
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 8080
 
-# Make sure the entrypoint script has the correct line endings
-RUN sed -i 's/\r$//' /app/docker-entrypoint.sh
+# Railway expects the container to run as non-root for security
+USER node
 
 ENTRYPOINT "/app/docker-entrypoint.sh"
