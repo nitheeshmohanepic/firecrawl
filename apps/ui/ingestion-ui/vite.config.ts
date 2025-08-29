@@ -9,4 +9,17 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    host: "0.0.0.0",
+    port: 4173,
+    allowedHosts: [
+      "firecrawl-production.up.railway.app",
+      "localhost",
+      "127.0.0.1"
+    ]
+  },
+  server: {
+    host: "0.0.0.0",
+    port: 5173
+  }
 })
